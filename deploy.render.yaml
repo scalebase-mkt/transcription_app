@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: transcricao-ptbr-app
+    env: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 10000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-1.5-pro
+      - key: SINGLE_SHOT
+        value: true
+      - key: FALLBACK_AUTO_CHUNK
+        value: true
+      - key: REQUEST_TIMEOUT_SEC
+        value: 600
+      - key: TTL_HOURS
+        value: 2
+      - key: MAX_UPLOAD_MB
+        value: 2000

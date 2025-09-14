@@ -1,0 +1,41 @@
+{
+  "name": "transcricao-ptbr-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "App de gravação e transcrição PT-BR com Gemini (AI Studio), fallback em chunks e retenção local de 2h.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development nodemon server.js",
+    "start": "cross-env NODE_ENV=production node server.js"
+  },
+  "dependencies": {
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "ffmpeg-static": "latest",
+    "ffprobe-static": "latest",
+    "fluent-ffmpeg": "latest",
+    "multer": "latest",
+    "nanoid": "latest",
+    "node-cron": "latest",
+    "@google/generative-ai": "latest"
+  },
+  "devDependencies": {
+    "cross-env": "latest",
+    "nodemon": "latest"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "server.js",
+      "lib"
+    ],
+    "ext": "js,json",
+    "ignore": [
+      "tmp/*",
+      "public/*"
+    ]
+  }
+}

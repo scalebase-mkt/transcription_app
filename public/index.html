@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>App de Transcrição (PT-BR)</title>
+    <style>
+      :root {
+        --bg: #0B0B0B;
+        --fg: #F5F5F5;
+        --muted: #BDBDBD;
+        --accent: #ffcd79;
+        --accent-2: #9b6b00;
+        --card: #151515;
+        --border: #222;
+        --danger: #ff6b6b;
+        --ok: #7dd97d;
+      }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      }
+      .container {
+        box-sizing: border-box;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 16px 56px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      h1 { font-size: 20px; margin: 0; font-weight: 600; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+      }
+      .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+      .col { display: flex; flex-direction: column; gap: 10px; }
+      .muted { color: var(--muted); }
+      .accent { color: var(--accent); }
+      .btn {
+        appearance: none;
+        border: 1px solid var(--accent);
+        color: #0b0b0b;
+        background: var(--accent);
+        border-radius: 10px;
+        padding: 12px 18px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn:hover { filter: brightness(0.98); }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent-2);
+      }
+      .big { width: 100%; padding: 14px 20px; font-size: 16px; }
+      .toggles { display: flex; gap: 12px; }
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #101010;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .toggle input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent);
+      }
+      .pill {
+        display: inline-block;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        background: #0f0f0f;
+      }
+      .status {
+        min-height: 24px;
+      }
+      .status[aria-live] { outline: none; }
+      .spinner {
+        display: inline-block;
+        width: 16px; height: 16px;
+        border: 2px solid rgba(255,255,255,0.2);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        vertical-align: -2px;
+        margin-right: 8px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .warn {
+        background: #2a1d00;
+        border: 1px solid #3a2a00;
+        color: #ffd89c;
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .downloads a {
+        color: var(--accent);
+        text-decoration: none;
+        margin-right: 12px;
+      }
+      .downloads a:hover { text-decoration: underline; }
+      audio { width: 100%; outline: none; }
+      a:focus, button:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .retention { font-size: 13px; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <main class="container" role="main">
+      <div class="row" style="justify-content: space-between;align-items:flex-end">
+        <h1>App de Transcrição (PT-BR)</h1>
+        <span class="pill" id="timer" aria-live="polite">00:00</span>
+      </div>
+
+      <section class="card col" aria-labelledby="lbl-fontes">
+        <strong id="lbl-fontes">Fontes de áudio</strong>
+        <div class="toggles" role="group" aria-label="Seleção de fontes">
+          <label class="toggle" id="labelMic">
+            <input id="toggleMic" type="checkbox" aria-label="Ativar microfone (in)" />
+            Mic (in)
+          </label>
+          <label class="toggle" id="labelTab">
+            <input id="toggleTab" type="checkbox" aria-label="Ativar áudio da aba (out)" />
+            Áudio da aba (out)
+          </label>
+        </div>
+        <div class="warn muted" id="hintOut" hidden>
+          Dica: No seletor, escolha a aba com som e marque “Compartilhar áudio”.
+        </div>
+      </section>
+
+      <section class="card col" aria-labelledby="lbl-controles">
+        <strong id="lbl-controles">Controles</strong>
+        <button id="btnRecord" class="btn big" aria-pressed="false">Iniciar gravação</button>
+        <div class="row" style="justify-content: space-between">
+          <button id="btnSend" class="btn btn-outline" disabled aria-disabled="true">Enviar para Transcrição</button>
+          <div class="retention" id="retentionNote">Seus arquivos expiram em 2h.</div>
+        </div>
+        <div class="status" id="status" aria-live="polite">Pronto.</div>
+        <audio id="player" controls preload="none" aria-label="Prévia do áudio gravado"></audio>
+      </section>
+
+      <section class="card col" aria-labelledby="lbl-resultados">
+        <strong id="lbl-resultados">Resultados</strong>
+        <div class="downloads" id="downloads"></div>
+      </section>
+    </main>
+
+    <script>
+      // State
+      let micEnabled = false;
+      let tabEnabled = false;
+      let micStream = null;
+      let tabStream = null;
+      let combinedStream = null;
+      let mediaRecorder = null;
+      let chunks = [];
+      let isRecording = false;
+      let timerInt = null;
+      let startTs = 0;
+      let lastBlob = null;
+      let lastId = null;
+
+      const $ = sel => document.querySelector(sel);
+      const fmt = n => String(n).padStart(2, '0');
+
+      const $toggleMic = $('#toggleMic');
+      const $toggleTab = $('#toggleTab');
+      const $btnRecord = $('#btnRecord');
+      const $btnSend = $('#btnSend');
+      const $status = $('#status');
+      const $player = $('#player');
+      const $downloads = $('#downloads');
+      const $timer = $('#timer');
+      const $hintOut = $('#hintOut');
+      const $retention = $('#retentionNote');
+
+      function setStatus(text, opts = {}) {
+        const { loading = false, tone = 'default' } = opts;
+        const prefix = loading ? '<span class="spinner" aria-hidden="true"></span>' : '';
+        $status.innerHTML = prefix + text;
+        if (tone === 'error') $status.style.color = 'var(--danger)';
+        else if (tone === 'ok') $status.style.color = 'var(--ok)';
+        else $status.style.color = 'var(--fg)';
+      }
+
+      function setRecordingUI(active) {
+        isRecording = active;
+        $btnRecord.textContent = active ? 'Parar' : 'Iniciar gravação';
+        $btnRecord.setAttribute('aria-pressed', active ? 'true' : 'false');
+        $toggleMic.disabled = active;
+        $toggleTab.disabled = active;
+      }
+
+      function updateTimer() {
+        const s = Math.floor((Date.now() - startTs) / 1000);
+        $timer.textContent = `${fmt(Math.floor(s/60))}:${fmt(s%60)}`;
+      }
+
+      function mediaType() {
+        return MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm';
+      }
+
+      async function startRecording() {
+        if (!micEnabled && !tabEnabled) {
+          setStatus('Selecione pelo menos uma fonte de áudio.', { tone: 'error' });
+          return;
+        }
+        setStatus('Solicitando permissões...');
+        chunks = [];
+        lastBlob = null;
+        $btnSend.disabled = true;
+        $btnSend.setAttribute('aria-disabled', 'true');
+        $downloads.innerHTML = '';
+        $player.src = '';
+
+        try {
+          if (micEnabled) {
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          }
+        } catch (err) {
+          setStatus('Permissão do microfone negada ou indisponível.', { tone: 'error' });
+          return;
+        }
+
+        try {
+          if (tabEnabled) {
+            // Importante: manter a trilha de vídeo ativa até parar para não encerrar o áudio
+            tabStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
+            const audioTracks = tabStream.getAudioTracks();
+            $hintOut.hidden = audioTracks.length > 0;
+            if (audioTracks.length === 0) {
+              setStatus('Nenhuma trilha de áudio da aba. No seletor, escolha a aba com som e marque “Compartilhar áudio”.', { tone: 'error' });
+              // Não inicia gravação se usuário não compartilhou áudio
+              cleanupStreams(false);
+              return;
+            }
+          }
+        } catch (err) {
+          if (tabEnabled) {
+            setStatus('Não foi possível capturar áudio da aba. Verifique permissões e tente novamente.', { tone: 'error' });
+            cleanupStreams(false);
+            return;
+          }
+        }
+
+        // Montar stream combinado
+        combinedStream = new MediaStream();
+        if (micStream) {
+          const t = micStream.getAudioTracks()[0];
+          if (t) combinedStream.addTrack(t);
+        }
+        if (tabStream) {
+          const t2 = tabStream.getAudioTracks()[0];
+          if (t2) combinedStream.addTrack(t2);
+        }
+
+        if (combinedStream.getAudioTracks().length === 0) {
+          setStatus('Nenhuma trilha de áudio disponível para gravar.', { tone: 'error' });
+          cleanupStreams(false);
+          return;
+        }
+
+        // Iniciar MediaRecorder
+        try {
+          mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mediaType() });
+        } catch {
+          mediaRecorder = new MediaRecorder(combinedStream);
+        }
+        mediaRecorder.ondataavailable = e => {
+          if (e.data && e.data.size) chunks.push(e.data);
+        };
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'audio/webm' });
+          lastBlob = blob;
+          $player.src = URL.createObjectURL(blob);
+          $player.load();
+          $btnSend.disabled = !blob.size;
+          $btnSend.setAttribute('aria-disabled', String(!blob.size));
+          setStatus('Parado. Pronto para enviar.');
+        };
+        mediaRecorder.start(1000);
+        startTs = Date.now();
+        clearInterval(timerInt);
+        timerInt = setInterval(updateTimer, 500);
+        updateTimer();
+        setRecordingUI(true);
+        setStatus('Gravando...');
+      }
+
+      function stopRecording() {
+        if (!isRecording) return;
+        try { mediaRecorder && mediaRecorder.stop(); } catch {}
+        cleanupStreams(true);
+        clearInterval(timerInt);
+        updateTimer();
+        setRecordingUI(false);
+      }
+
+      function cleanupStreams(stopAllTracks) {
+        const stopTracks = s => {
+          if (!s) return;
+          s.getTracks().forEach(tr => { try { if (stopAllTracks) tr.stop(); } catch {} });
+        };
+        stopTracks(micStream);
+        stopTracks(tabStream);
+        stopTracks(combinedStream);
+        micStream = tabStream = combinedStream = null;
+      }
+
+      async function sendUpload() {
+        if (!lastBlob) return;
+        setStatus('Enviando arquivo...', { loading: true });
+        $btnSend.disabled = true;
+        $btnSend.setAttribute('aria-disabled', 'true');
+
+        const fd = new FormData();
+        fd.append('audio', lastBlob, 'gravacao.webm');
+        const source =
+          micEnabled && tabEnabled ? 'mic+tab' :
+          micEnabled ? 'mic' :
+          tabEnabled ? 'tab' : 'unknown';
+        fd.append('source', source);
+
+        try {
+          const resp = await fetch('/upload', { method: 'POST', body: fd });
+          if (!resp.ok) throw new Error('Falha no upload');
+          const data = await resp.json();
+          lastId = data.id;
+          setStatus('Processando...', { loading: true });
+          pollStatus(data.id);
+        } catch (err) {
+          setStatus('Erro ao enviar. Tente novamente.', { tone: 'error' });
+          $btnSend.disabled = false;
+          $btnSend.setAttribute('aria-disabled', 'false');
+        }
+      }
+
+      async function pollStatus(id) {
+        try {
+          const r = await fetch(`/status/${encodeURIComponent(id)}`);
+          if (!r.ok) throw new Error('Erro no status');
+          const s = await r.json();
+          const st = String(s.status || '').toLowerCase();
+          if (st === 'done' || st === 'completed' || st === 'ok') {
+            setStatus('Concluído.', { tone: 'ok' });
+            renderDownloads(id, s);
+            return;
+          }
+          if (st === 'error' || s.error) {
+            setStatus(`Erro: ${s.error || 'falha no processamento'}`, { tone: 'error' });
+            return;
+          }
+          setStatus('Processando...', { loading: true });
+          setTimeout(() => pollStatus(id), 4000);
+        } catch {
+          setStatus('Falha ao consultar status. Retentando...', { loading: true });
+          setTimeout(() => pollStatus(id), 4000);
+        }
+      }
+
+      function renderDownloads(id, s) {
+        // Preferir os links retornados pela API (compat), senão montar pelas rotas existentes
+        const dl = s && s.downloads ? s.downloads : {
+          txt: `/download/${encodeURIComponent(id)}/txt`,
+          wav: `/download/${encodeURIComponent(id)}/wav`,
+          mp3: `/download/${encodeURIComponent(id)}/mp3`
+        };
+        $downloads.innerHTML = `
+          <a href="${dl.txt}" target="_blank" rel="noopener">Baixar .txt</a>
+          <a href="${dl.wav}" target="_blank" rel="noopener">Baixar .wav</a>
+          <a href="${dl.mp3}" target="_blank" rel="noopener">Baixar .mp3</a>
+        `;
+      }
+
+      async function loadRetention() {
+        // Backend não expõe retenção; manter aviso padrão de 2h
+        $retention.textContent = 'Seus arquivos expiram em 2h.';
+      }
+
+      // Events
+      $toggleMic.addEventListener('change', (e) => {
+        micEnabled = e.target.checked;
+      });
+      $toggleTab.addEventListener('change', (e) => {
+        tabEnabled = e.target.checked;
+        $hintOut.hidden = !tabEnabled;
+      });
+      $btnRecord.addEventListener('click', () => {
+        if (!isRecording) startRecording();
+        else stopRecording();
+      });
+      $btnSend.addEventListener('click', sendUpload);
+
+      // Init
+      loadRetention();
+      setStatus('Pronto.');
+    </script>
+  </body>
+  </html>

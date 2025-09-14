@@ -1,0 +1,8 @@
+Este projeto utiliza bibliotecas de terceiros conforme licenciamentos próprios:
+- express, multer, dotenv, cors
+- fluent-ffmpeg, ffmpeg-static, ffprobe-static
+- @google/generative-ai (Gemini)
+- nanoid, node-cron
+
+Marcas e nomes de produtos são de seus respectivos proprietários.
+Use por sua conta e risco; não armazene dados sensíveis. Áudios e transcrições são temporários (retenção local, padrão 2h).
